@@ -4,15 +4,14 @@ const jwt = require("jsonwebtoken");
 const deleteImage = require("../utils/imageDelete");
 const { tryCatch } = require("../middleware/asyncError");
 const ErrorHandler = require("../utils/errorHandler");
-const {validationResult} = require('express-validator')
+const { validationResult } = require("express-validator");
 
 // signup user
 exports.postSignup = tryCatch(async (req, res, next) => {
   const errors = validationResult(req);
   const { name, email, password } = req.body;
-  
 
-  if(errors){
+  if (errors.length > 0) {
     throw new ErrorHandler(errors.array()[0].msg, 400);
   }
 
@@ -24,31 +23,31 @@ exports.postSignup = tryCatch(async (req, res, next) => {
   });
 
   await user.save();
-  res.status(201).json({ 
+  res.status(201).json({
     message: "User Signedup Successfully",
-    user
-   });
+    user,
+  });
 });
 
 // login user
 exports.postLogin = tryCatch(async (req, res, next) => {
   const errors = validationResult(req);
-  if(errors){
+  if (errors.length > 0) {
     throw new ErrorHandler(errors.array()[0].msg, 400);
   }
-  
+
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
 
   if (!user) {
-     throw new ErrorHandler("Email does not exist", 401);
+    throw new ErrorHandler("Email does not exist", 401);
   }
 
   const isValidPassword = await bcrypt.compare(password, user.password);
 
   if (!isValidPassword) {
-     throw new ErrorHandler("Incorrect Password", 401);
+    throw new ErrorHandler("Incorrect Password", 401);
   }
 
   const token = await jwt.sign(
@@ -95,11 +94,14 @@ exports.updateUser = tryCatch(async (req, res, next) => {
   );
 
   res.status(200).json({
-    message:"User updated",
+    message: "User updated",
     updatedUser,
   });
 });
 
 //reset password
 
-exports.resetPassword = (req, res, next) => {};
+exports.resetPassword = (req, res, next) => {
+    
+
+};

@@ -7,11 +7,24 @@ const {tryCatch} = require('../middleware/asyncError');
 exports.createOrder = tryCatch(async (req, res, next) => {
    const userId= req.userId;
 
-   const user =await User.findById(userId);
-   console.log(user);
+    const user =await User.findById(userId).populate('cart.product');
+   
 
-  // await sendMail(user);
+    let totalCost = user.cart.reduce((total, cartItem)=>{
+         return total+ (cartItem.product.price * cartItem.quantity);
+    },0);
+   
+   const orderData={
+      name: user.name,
+      email:user.email,
+      totalCost:totalCost
+   }
 
+  await sendMail( orderData , "Order Details");
+
+  user.cart =[];
+  user.save();
+  console.log("d");
   res.status(200).json({
      success:true,
      message:"Your order has been placed. Check your email for more details"
