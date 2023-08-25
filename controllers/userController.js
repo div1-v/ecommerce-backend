@@ -1,15 +1,19 @@
 const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
-const ErrorHandler = require("../utils/errorHandler");
 const jwt = require("jsonwebtoken");
 const deleteImage = require("../utils/imageDelete");
+const { tryCatch } = require("../middleware/asyncError");
+const ErrorHandler = require("../utils/errorHandler");
+const {validationResult} = require('express-validator')
 
 // signup user
-exports.postSignup = async (req, res, next) => {
+exports.postSignup = tryCatch(async (req, res, next) => {
+  const errors = validationResult(req);
   const { name, email, password } = req.body;
+  
 
-  if (!name || !email || !password) {
-    return res.send("Incomplete Data");
+  if(errors){
+    throw new ErrorHandler(errors.array()[0].msg, 400);
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);
@@ -20,29 +24,33 @@ exports.postSignup = async (req, res, next) => {
   });
 
   await user.save();
-  res.send(user);
-};
+  res.status(201).json({ 
+    message: "User Signedup Successfully",
+    user
+   });
+});
 
 // login user
-exports.postLogin = async (req, res, next) => {
+exports.postLogin = tryCatch(async (req, res, next) => {
+  const errors = validationResult(req);
+  if(errors){
+    throw new ErrorHandler(errors.array()[0].msg, 400);
+  }
+  
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
 
   if (!user) {
-    return res.status(404).json({
-      message: "Email does not exist",
-    });
+     throw new ErrorHandler("Email does not exist", 401);
   }
 
   const isValidPassword = await bcrypt.compare(password, user.password);
 
   if (!isValidPassword) {
-    return res.status(401).json({
-      message: "Incorrect password",
-    });
+     throw new ErrorHandler("Incorrect Password", 401);
   }
- 
+
   const token = await jwt.sign(
     { email: user.email, userId: user._id },
     process.env.SECRET_KEY,
@@ -53,10 +61,10 @@ exports.postLogin = async (req, res, next) => {
     token,
     userId: user._id,
   });
-};
+});
 
 // logout user
-exports.postLogout = async (req, res, next) => {
+exports.postLogout = tryCatch(async (req, res, next) => {
   res
     .status(200)
     .cookie("token", null, { expires: new Date(Date.now()), httpOnly: true })
@@ -64,10 +72,10 @@ exports.postLogout = async (req, res, next) => {
       success: true,
       message: "Logged out",
     });
-};
+});
 
 // update a user
-exports.updateUser = async (req, res, next) => {
+exports.updateUser = tryCatch(async (req, res, next) => {
   const userId = req.userId;
 
   const user = await User.findById({ _id: userId });
@@ -87,12 +95,11 @@ exports.updateUser = async (req, res, next) => {
   );
 
   res.status(200).json({
+    message:"User updated",
     updatedUser,
   });
-};
+});
 
 //reset password
 
-exports.resetPassword = (req,res,next)=>{
-   
-}
+exports.resetPassword = (req, res, next) => {};

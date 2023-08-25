@@ -2,9 +2,11 @@ const Product = require("../models/productModel");
 const deleteImage = require("../utils/imageDelete");
 const Feature = require("../utils/features");
 const User = require("../models/userModel");
+const { tryCatch } = require("../middleware/asyncError");
+const ErrorHandler = require("../utils/errorHandler");
 
 //get all products
-exports.getProducts = async (req, res, next) => {
+exports.getProducts = tryCatch(async (req, res, next) => {
   const perPage = 2;
   const page = req.query.page;
   if (!page) page = 1;
@@ -21,26 +23,25 @@ exports.getProducts = async (req, res, next) => {
   const filteredProducts = feature.search();
 
   if (filteredProducts.length == 0) {
-    return res.send("No Products found");
+    return new ErrorHandler();
   }
-  res.send(filteredProducts);
-};
+  res.status(200).json({filteredProducts});
+});
 
 //get single product
-exports.getProduct = async (req, res, next) => {
+exports.getProduct = tryCatch(async (req, res, next) => {
   const productId = req.params.id;
 
   const product = await Product.findById({ _id: productId });
 
   if (!product) {
-    return res.send("Invalid Id");
+    return new ErrorHandler("Product not found", 404);
   }
 
-  res.send(product);
-};
-
+  res.status(200).json({ product });
+});
 // create a product
-exports.postProduct = async (req, res, next) => {
+exports.postProduct = tryCatch(async (req, res, next) => {
   const name = req.body.name;
   const imagePath = req.file.path;
   const price = req.body.price;
@@ -55,33 +56,38 @@ exports.postProduct = async (req, res, next) => {
   });
 
   await product.save();
-  res.send(product);
-};
+  res.status(200).json({
+    message: "Product created",
+    product,
+  });
+});
 
 //delete a product
-exports.deleteProduct = async (req, res, next) => {
+exports.deleteProduct = tryCatch(async (req, res, next) => {
   const productId = req.params.id;
 
   const product = await Product.findById({ _id: productId });
   console.log(product);
   if (!product) {
-    return res.send("Invalid Id");
+    return new ErrorHandler("Invalid Id", 404);
   }
 
   await Product.deleteOne({ _id: productId });
   await deleteImage(product.imagePath);
 
-  res.send("Product deleted");
-};
+  res.status(200).json({
+    message: "Product deleted",
+  });
+});
 
 // update a product
-exports.updateProduct = async (req, res, next) => {
+exports.updateProduct = tryCatch(async (req, res, next) => {
   const productId = req.params.id;
 
   const product = await Product.findById({ _id: productId });
 
   if (!product) {
-    return res.send("Invalid Id");
+    return new ErrorHandler("Invalid Id", 404);
   }
 
   const name = req.body.name ?? product.name;
@@ -99,16 +105,17 @@ exports.updateProduct = async (req, res, next) => {
     { name, imagePath, price, description }
   );
 
-  res.send(updatedProduct);
-};
+  res.status(200).json({
+    message: "Product updated successfully",
+    updatedProduct,
+  });
+});
 
 // Add product to cart
-exports.addToCart = async (req, res, next) => {
+exports.addToCart = tryCatch(async (req, res, next) => {
   const productId = req.params.id;
   if (!req.userId) {
-    return res.json({
-      message: "Login first to add product to cart",
-    });
+    return new ErrorHandler("Login is first to add to cart", 401);
   }
 
   const newCartItem = {
@@ -116,8 +123,8 @@ exports.addToCart = async (req, res, next) => {
     quantity: 1,
   };
   const user = await User.findById(req.userId);
- 
-  const isAddedToCart =await user.cart.find(
+
+  const isAddedToCart = await user.cart.find(
     (cart) => cart.product.toString() === productId.toString()
   );
 
@@ -131,5 +138,8 @@ exports.addToCart = async (req, res, next) => {
   }
   await user.save();
 
-  res.send(user);
-};
+  res.status(200).json({
+    message: "Successfully added to cart",
+    product,
+  });
+});
