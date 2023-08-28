@@ -3,9 +3,20 @@ const mongoose = require("mongoose");
 const orderSchema = new mongoose.Schema({
 
   user: {
-    type: Schema.type.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required:true
+  },
+
+  isDelivered:{
+    type:Number,
+    enum:[0,1],
+    default:0
+  },
+
+  cost:{
+    type:Number,
+    required: true
   },
 
   products: [
@@ -15,7 +26,7 @@ const orderSchema = new mongoose.Schema({
         required:true
       },
       product:{
-        type:Schema.type.ObjectId,
+        type:mongoose.Schema.Types.ObjectId,
         ref:'Product',
         required:true
       }

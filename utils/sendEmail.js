@@ -1,25 +1,25 @@
 const nodemailer = require('nodemailer');
-const { orderConfirmationEmail } = require('../templates/orderEmail');
+const { orderConfirmationEmail } = require('../templates/email');
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.ethereal.email',
   port: 587,
   auth: {
-      user: 'lyla61@ethereal.email',
-      pass: 'ZH5cbm7UQStVmdH1sD'
+      user: 'ramiro41@ethereal.email',
+      pass: 'GacsS56dduCqdrV7rx'
   }
 });
 
 
-function sendMail(orderData, subject){
-
+function sendMail(data, subject){
+    console.log(data.emailTemplate(data));
     transporter.sendMail({
-        to: orderData.email,
+        to: data.email,
 
         from: process.env.EMAIL,
 
         subject: subject,
-        html: orderConfirmationEmail(orderData)
+        html: data.emailTemplate(data)
       });
 }
 

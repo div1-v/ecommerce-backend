@@ -8,12 +8,18 @@ const productSchema = new mongoose.Schema({
 
   imagePath: {
     type: String,
-    required: true,
+    required:true,
   },
 
   price: {
     type: Number,
     required: true,
+  },
+
+  creator:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref:'User',
+    required:true
   },
 
   description: {

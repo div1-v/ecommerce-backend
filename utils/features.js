@@ -1,28 +1,24 @@
 class Features {
-  constructor(products, sortByPrice, name) {
-    this.products = products;
-    this.sortByPrice = sortByPrice;
-    this.name = name;
+  constructor( query, queryString) {
+    this.query = query;
+    this.queryString = queryString;
   }
 
-
-  sort() {
-    if (this.sortByPrice) {
-      this.products.sort((a, b) => {
-        return a.price - b.price;
-      });
-    }
-  }
 
   search() {
-    if (this.name) {
-      const filteredProduct = this.products.filter((product) => {
-        return product.name == this.name;
-      });
-      // console.log(filteredProduct);
-      this.products = filteredProduct;
+    const search = this.queryString.search;
+    if(keyword){
+      this.query = this.query.find({name : search});
     }
-    return this.products;
+    return this.query;
+  }
+
+  sort() {
+    const sort =this.queryString.sort;
+    if(sort=='true'){
+      this.query.sort('price');
+    }
+    return this.query;
   }
 }
 
