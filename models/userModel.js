@@ -5,17 +5,17 @@ const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
+      required: [true, "Please enter user name"],
     },
 
     email: {
       type: String,
-      required: true,
+      required: [true, "Please enter user email"],
     },
 
     password: {
       type: String,
-      required: true,
+      required: [true, "Please enter password"],
     },
 
     imagePath: {

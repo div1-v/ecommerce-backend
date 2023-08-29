@@ -3,17 +3,17 @@ const mongoose = require("mongoose");
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
+    required: [true, "Please enter product name"],
   },
 
   imagePath: {
     type: String,
-    required:true,
+    required:[true, "Please add an image"],
   },
 
   price: {
     type: Number,
-    required: true,
+    required: [true, "Please enter product price"],
   },
 
   creator:{
@@ -24,7 +24,7 @@ const productSchema = new mongoose.Schema({
 
   description: {
     type: String,
-    required: true,
+    required: [true, "Please enter description"],
   },
 }, {timestamps:true})
 

@@ -5,14 +5,14 @@ const transporter = nodemailer.createTransport({
   host: 'smtp.ethereal.email',
   port: 587,
   auth: {
-      user: 'ramiro41@ethereal.email',
-      pass: 'GacsS56dduCqdrV7rx'
+      user: 'renee.bruen@ethereal.email',
+      pass: 'faNFVDFEZJFDyq2RXK'
   }
 });
 
 
 function sendMail(data, subject){
-    console.log(data.emailTemplate(data));
+    
     transporter.sendMail({
         to: data.email,
 

@@ -7,6 +7,7 @@ const ErrorHandler = require("../utils/errorHandler");
 const Order = require("../models/orderModel");
 const template = require('../templates/email');
 const constants = require('../config/constants');
+const ResponseHandler = require("../utils/responseHandler");
 
 //create an order
 exports.createOrder = tryCatch(async (req, res, next) => {
@@ -17,6 +18,8 @@ exports.createOrder = tryCatch(async (req, res, next) => {
   if (user.cart.length == 0) {
     throw new ErrorHandler("Your cart is empty", constants.NOT_FOUND);
   }
+  const city= req.body.city;
+  const pinCode = req.body.pinCode;
 
   let totalCost = user.cart.reduce((total, cartItem) => {
     return total + cartItem.product.price * cartItem.quantity;
@@ -34,6 +37,10 @@ exports.createOrder = tryCatch(async (req, res, next) => {
     user: userId,
     products: user.cart,
     cost: totalCost,
+    address:{
+      city,
+      pinCode
+    }
   };
 
   await sendMail(orderMailInfo, "Order Details");
@@ -43,11 +50,8 @@ exports.createOrder = tryCatch(async (req, res, next) => {
   user.cart = [];
   await user.save();
 
-  res.status(constants.OK).json({
-    success: true,
-    message: "Your order has been placed. Check your email for more details",
-    order,
-  });
+  const response =new ResponseHandler(constants.OK,constants.ORDER_CREATED,"ORDER_CREATED",order,res);
+  response.getResponse();
 });
 
 //deliver the order
@@ -78,10 +82,9 @@ exports.postDeliverOrder = tryCatch(async (req, res, next) => {
   };
   await sendMail(mailData, "Order Delivered");
 
-  res.status(constants.OK).json({
-    success: true,
-    order,
-  });
+  const response = new ResponseHandler(constants.OK,constants.ORDER_DELIVER,"ORDER_DELIVER",order,res);
+  response.getResponse();
+  
 });
 
 //get all orders
@@ -92,8 +95,19 @@ exports.getAllOrders = tryCatch(async (req, res, next) => {
     throw new ErrorHandler("You have not ordered anything yet", constants.NOT_FOUND);
   }
 
-  res.status(constants.OK).json({
-    success: true,
-    orders,
-  });
+  const response = new ResponseHandler(constants.OK, constants.PRODUCT_FOUND,"PRODUCT_FOUND",orders,res);
+  response.getResponse();
+  
 });
+
+exports.getSingleOrder = tryCatch( async(req,res,next)=>{
+     const orderId = req.params.id;
+     const order =await Order.findById({_id:orderId});
+     if(!order){
+       throw new ErrorHandler("No order found with this id", constants.NOT_FOUND);
+     }
+
+     const response= new ResponseHandler(constants.OK,constants.PRODUCT_FOUND,"PRODUCT_FOUND",order,res);
+     response.getResponse();
+
+})

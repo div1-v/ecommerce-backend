@@ -3,8 +3,9 @@ const upload = require("../utils/imageUpload");
 const { isAuthenticated, isAdmin } = require("../middleware/auth");
 
 const router = express.Router();
-const {productValidation} = require('../middleware/validation');
+
 const productController = require("../controllers/productController");
+const { productValidation } = require("../middleware/validation");
 
 router
   .route("/product/new")

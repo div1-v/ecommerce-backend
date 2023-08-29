@@ -1,5 +1,4 @@
-const { body , check} = require("express-validator");
-
+const { body, check } = require("express-validator");
 
 exports.signupValidation = () => {
   return [
@@ -15,6 +14,7 @@ exports.signupValidation = () => {
       .trim()
       .not()
       .isEmpty()
+      .withMessage("Please enter name")
       .isString()
       .withMessage("Please enter only letters")
       .isLength({ min: 3, max: 20 }),
@@ -47,11 +47,8 @@ exports.loginValidation = () => {
   ];
 };
 
-exports.productValidation = ()=>{
-  
-
+exports.productValidation = () => {
   return [
-
     check("name")
       .trim()
       .not()
@@ -60,16 +57,9 @@ exports.productValidation = ()=>{
       .withMessage("Please enter only letters")
       .isLength({ min: 3, max: 20 }),
 
-    check("price")
-      .trim()
-      .not()
-      .isEmpty()
-      .withMessage("Please enter price"),
+    check("price").trim().not().isEmpty().withMessage("Please enter price"),
 
-    check("imagePath")
-      .not()
-      .isEmpty()
-      .withMessage("Please add an image"),
+    check("imagePath").not().isEmpty().withMessage("Please add an image"),
 
     check("description")
       .trim()
@@ -77,6 +67,5 @@ exports.productValidation = ()=>{
       .isEmpty()
       .withMessage("Please enter description")
       .isLength({ min: 5, max: 80 }),
-      
   ];
-}
+};
