@@ -10,6 +10,14 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// let transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: process.env.NODEMAILER_USER,
+//     pass: process.env.NODEMAILER_PASSWORD,
+//   },
+// });
+
 
 function sendMail(data, subject){
     

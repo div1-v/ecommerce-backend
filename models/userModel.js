@@ -28,6 +28,7 @@ const userSchema = new mongoose.Schema(
       default: 0,
     },
 
+
     cart: [
       {
         quantity: {

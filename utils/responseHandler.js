@@ -9,7 +9,7 @@ class ResponseHandler {
   }
 
   getResponse() {
-    console.log(this.res);
+    
     return this.res.status(this.statusCode).json({
       meta: {
         status: true,

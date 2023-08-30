@@ -1,5 +1,5 @@
 const express = require("express");
-const cookieParser = require("cookie-parser");
+
 require("dotenv").config();
 const { errorHandler } = require("./utils/errorHandler");
 
@@ -7,7 +7,7 @@ const connectDatabase = require("./config/database");
 const app = express();
 
 app.use(express.json());
-app.use(cookieParser());
+
 
 const userRoute = require("./routes/userRoute");
 const productRoute = require("./routes/productRoute");
@@ -20,15 +20,18 @@ app.use("/admin", orderRoute);
 
 app.use('/', (req,res)=>{
     res.status(constants.BAD_REQUEST).json({
+        success:false,
         message:"Invalid Route"
     })
 })
 
 app.use((error, req, res, next) => {
+  
   res.status(error.statusCode || constants.SERVER_ERROR).json({
     success: false,
     message: error.message || "Internal Server Error",
     statusCode: error.statusCode || constants.SERVER_ERROR,
+   
   });
 });
 

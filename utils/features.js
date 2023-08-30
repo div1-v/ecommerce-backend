@@ -1,24 +1,33 @@
 class Features {
-  constructor( query, queryString) {
-    this.query = query;
+  constructor( products, queryString) {
+    this.products = products;
     this.queryString = queryString;
   }
 
 
   search() {
-    const search = this.queryString.search;
+    const keyword = this.queryString.keyword;
+   
     if(keyword){
-      this.query = this.query.find({name : search});
+      const filter = this.products.filter( (prod)=>{
+         return prod.name==keyword;
+      }) 
+      this.products=filter;
     }
-    return this.query;
+    return this.products
   }
 
   sort() {
     const sort =this.queryString.sort;
+    
     if(sort=='true'){
-      this.query.sort('price');
+     
+       this.products.sort((a,b)=>{
+         return a.price-b.price;
+      })
+     
     }
-    return this.query;
+    return this.products;
   }
 }
 

@@ -6,7 +6,7 @@ const { UNAUTHORISED, SECRET_KEY } = require("../config/constants");
 
 exports.isAuthenticated = tryCatch(async (req, res, next) => {
   
-  const { token } = req.cookies;
+  const  token  = req.headers.token;
  
   if (!token) {
     throw new ErrorHandler("Please login first", UNAUTHORISED);

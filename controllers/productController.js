@@ -7,49 +7,63 @@ const ErrorHandler = require("../utils/errorHandler");
 const { validationResult } = require("express-validator");
 const constants = require("../config/constants");
 const ResponseHandler = require("../utils/responseHandler");
+const sharp = require("sharp");
 
-//get all products
+// GET ALL PRODUCTS
 exports.getProducts = tryCatch(async (req, res, next) => {
   const perPage = 2;
-  const page = req.query.page;
+  let page = req.query.page;
   if (!page) page = 1;
-  const totalProduct = await Product.countDocuments();
+  const totalProduct = await Product.countDocuments( { isDeleted: 0 });
 
-  const products = await Product.find()
+  let products = await Product.find({ isDeleted:0 })
     .skip((page - 1) * perPage)
     .limit(perPage);
+  
+   
+    const features = new Feature(products, req.query);
+    features.search();
+    const filteredProducts = features.sort();
+    if(filteredProducts.length == 0) {
+      throw new ErrorHandler("No Product found", 404);
+    }
+    
 
-  const feature = new Feature(products, req.query);
-  feature.sort();
-  const filteredProducts = feature.search();
-
-  if (filteredProducts.length == 0) {
-    return new ErrorHandler();
-  }
-
-  const response = new ResponseHandler(constants.OK, constants.PRODUCT_FOUND,"PRODUCT_FOUND",filteredProducts,res);
+  const response = new ResponseHandler(
+    constants.OK,
+    constants.PRODUCT_FOUND,
+    "PRODUCT_FOUND",
+    filteredProducts,
+    res
+  );
   response.getResponse();
 });
 
-//get single product
+//GET SINGLE PRODUCT
 exports.getProduct = tryCatch(async (req, res, next) => {
   const productId = req.params.id;
 
-  const product = await Product.findById({ _id: productId });
+  const product = await Product.findOne({ _id: productId, isDeleted:0});
+  console.log(product);
 
   if (!product) {
-    return new ErrorHandler("Product not found", constants.NOT_FOUND);
+    throw new ErrorHandler("Product not found", constants.NOT_FOUND);
   }
-  
-  const response = new ResponseHandler(constants.OK,constants.PRODUCT_FOUND,"PRODUCT_FOUND",product,res);
+
+  const response = new ResponseHandler(
+    constants.OK,
+    constants.PRODUCT_FOUND,
+    "PRODUCT_FOUND",
+    product,
+    res
+  );
   response.getResponse();
-  
 });
 
-// create a product
+// CREATE A PRODUCT
 exports.postProduct = tryCatch(async (req, res, next) => {
   const errors = validationResult(req);
-  console.log(errors.array());
+  
   if (errors.array().length > 0) {
     throw new ErrorHandler(errors.array()[0].msg, constants.UNPROCESSED_ENTITY);
   }
@@ -61,6 +75,7 @@ exports.postProduct = tryCatch(async (req, res, next) => {
       constants.UNPROCESSED_ENTITY
     );
   }
+ 
   const imagePath = req.file.path;
 
   const price = req.body.price;
@@ -76,11 +91,17 @@ exports.postProduct = tryCatch(async (req, res, next) => {
 
   await product.save();
 
-  const response = new ResponseHandler(constants.OK,constants.PRODUCT_CREATED,"PRODUCT_CREATED",product,res);
+  const response = new ResponseHandler(
+    constants.OK,
+    constants.PRODUCT_CREATED,
+    "PRODUCT_CREATED",
+    product,
+    res
+  );
   response.getResponse();
 });
 
-//delete a product
+//DELETE A PRODUCT 
 exports.deleteProduct = tryCatch(async (req, res, next) => {
   const productId = req.params.id;
 
@@ -97,14 +118,24 @@ exports.deleteProduct = tryCatch(async (req, res, next) => {
     );
   }
 
-  await Product.deleteOne({ _id: productId });
-  await deleteImage(product.imagePath);
+  if(product.imagePath){
+     deleteImage(product.imagePath);
+  }
 
-  const response = new ResponseHandler(constants.OK,constants.DELETE_PRODUCT,"DELETE_PRODUCT",{},res);
+  product.isDeleted =1;
+  await product.save();
+
+  const response = new ResponseHandler(
+    constants.OK,
+    constants.DELETE_PRODUCT,
+    "DELETE_PRODUCT",
+    {},
+    res
+  );
   response.getResponse();
 });
 
-// update a product
+// UPDATE A PRODUCT
 exports.updateProduct = tryCatch(async (req, res, next) => {
   const errors = validationResult(req);
 
@@ -115,7 +146,7 @@ exports.updateProduct = tryCatch(async (req, res, next) => {
 
   const productId = req.params.id;
 
-  const product = await Product.findById({ _id: productId });
+  const product = await Product.findOne({ _id: productId ,isDeleted:0});
 
   if (!product) {
     return new ErrorHandler("Invalid Id", constants.BAD_REQUEST);
@@ -140,14 +171,21 @@ exports.updateProduct = tryCatch(async (req, res, next) => {
     { name, imagePath, price, description }
   );
 
-  const response = new ResponseHandler(constants.OK,constants.PRODUCT_UPDATE,"PRODUCT_UPDATE",updatedProduct,res)
+  const response = new ResponseHandler(
+    constants.OK,
+    constants.PRODUCT_UPDATE,
+    "PRODUCT_UPDATE",
+    updatedProduct,
+    res
+  );
   response.getResponse();
 });
 
-// Add product to cart
+// ADD PRODUCT TO CART
 exports.addToCart = tryCatch(async (req, res, next) => {
   const productId = req.params.id;
-  const product = Product.findById({ _id: productId });
+  const product =await Product.findOne({ _id: productId ,isDeleted:0});
+  
   if (!product) {
     throw new ErrorHandler("Invalid Id", constants.BAD_REQUEST);
   }
@@ -169,8 +207,14 @@ exports.addToCart = tryCatch(async (req, res, next) => {
     user.cart.push({ product: productId, quantity: 1 });
   }
   await user.save();
-  
-  const response = new ResponseHandler(constants.OK,constants.CART_ADD,"CART_ADD",user,res);
-    
-   response.getResponse();
+
+  const response = new ResponseHandler(
+    constants.OK,
+    constants.CART_ADD,
+    "CART_ADD",
+    user,
+    res
+  );
+
+  response.getResponse();
 });

@@ -12,10 +12,10 @@ const constants = require("../config/constants");
 const { NOTFOUND } = require("dns");
 const ResponseHandler = require("../utils/responseHandler");
 
-// signup user
+// SIGNUP USER
 exports.postSignup = tryCatch(async (req, res, next) => {
   const errors = validationResult(req);
-  
+
   const { name, email, password } = req.body;
   if (errors.array().length > 0) {
     throw new ErrorHandler(errors.array()[0].msg, constants.UNPROCESSED_ENTITY);
@@ -43,14 +43,15 @@ exports.postSignup = tryCatch(async (req, res, next) => {
 
   const response = new ResponseHandler(
     constants.CREATED,
-    constants.SUCCESSFULL_SIGNUP,
-    "SUCCESSFULL_SIGNUP",
-    user,res
+    constants.SUCCESSFUL_SIGNUP,
+    "SUCCESSFUL_SIGNUP",
+    user,
+    res
   );
   response.getResponse();
 });
 
-// login user
+// LOGIN USER
 exports.postLogin = tryCatch(async (req, res, next) => {
   const errors = validationResult(req);
   if (errors.array().length > 0) {
@@ -76,37 +77,32 @@ exports.postLogin = tryCatch(async (req, res, next) => {
     { expiresIn: "8h" }
   );
 
-  const response =new ResponseHandler(
+  const response = new ResponseHandler(
     constants.OK,
     constants.SUCCESSFUL_LOGIN,
     "SUCCESSFUL_LOGIN",
-    { userId: user._id, token },res
+    { userId: user._id, token },
+    res
   );
-   
+
   response.getResponse();
-  // res
-  //   .status(response.statusCode)
-  //   .cookie("token", token)
-  //   .json(response.getResponse());
 });
 
-// logout user
+// LOGOUT USER
 exports.postLogout = tryCatch(async (req, res, next) => {
-
-  const response =new ResponseHandler(
+  
+  
+  const response = new ResponseHandler(
     constants.OK,
     constants.SUCCESSFUL_LOGOUT,
     "SUCCESSFUL_LOGOUT",
-    {},res
+    {token:"dummy"},
+    res
   );
   response.getResponse();
-  // res
-  //   .status(response.statusCode)
-  //   .cookie("token", null, { expires: new Date(Date.now()), httpOnly: true })
-  //   .json( response.getResponse());
 });
 
-// update a user
+// UPDATE A USER
 exports.updateUser = tryCatch(async (req, res, next) => {
   const userId = req.userId;
 
@@ -116,7 +112,6 @@ exports.updateUser = tryCatch(async (req, res, next) => {
   let imagePath = user.imagePath;
 
   if (req.file) {
-   
     imagePath = req.file.path;
     if (user.imagePath) {
       deleteImage(user.imagePath);
@@ -129,11 +124,17 @@ exports.updateUser = tryCatch(async (req, res, next) => {
     { new: true }
   );
 
-  const response = new ResponseHandler(constants.CREATED,constants.USER_UPDATE,"USER_UPDATE",updatedUser,res);
+  const response = new ResponseHandler(
+    constants.CREATED,
+    constants.USER_UPDATE,
+    "USER_UPDATE",
+    updatedUser,
+    res
+  );
   response.getResponse();
 });
 
-//Make admin
+// MAKE ADMIN
 exports.makeAdmin = tryCatch(async (req, res, next) => {
   const userId = req.userId;
   const user = await User.findById({ _id: userId });
@@ -149,12 +150,17 @@ exports.makeAdmin = tryCatch(async (req, res, next) => {
 
   await toBeAdminUser.save();
 
-  const response = new ResponseHandler(constants.OK, constants.CHANGE_TO_ADMIN,"CHANGE_TO_ADMIN",toBeAdminUser,res)
+  const response = new ResponseHandler(
+    constants.OK,
+    constants.CHANGE_TO_ADMIN,
+    "CHANGE_TO_ADMIN",
+    toBeAdminUser,
+    res
+  );
   response.getResponse();
 });
 
-//forget password
-
+//FORGOT PASSWORD
 exports.forgetPassword = tryCatch(async (req, res, next) => {
   const email = req.body.email;
   const user = await User.findOne({ email });
@@ -168,7 +174,7 @@ exports.forgetPassword = tryCatch(async (req, res, next) => {
 
   const resetToken = crypto.randomBytes(20).toString("hex");
 
-  // Hashing and adding resetPasswordToken to userSchema
+  
   user.resetPasswordToken = resetToken;
 
   user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
@@ -183,11 +189,17 @@ exports.forgetPassword = tryCatch(async (req, res, next) => {
   };
   await sendMail(emailData, "Forget password");
 
-  const response = new ResponseHandler(constants.OK,constants.FORGOT_PASSWORD,"FOORGOT_PASSWORD",resetToken,res)
+  const response = new ResponseHandler(
+    constants.OK,
+    constants.FORGOT_PASSWORD,
+    "FOORGOT_PASSWORD",
+    resetToken,
+    res
+  );
   response.getResponse();
 });
 
-//Reset Password
+//RESET PASSWORD
 exports.resetPassword = tryCatch(async (req, res, next) => {
   const resetPasswordToken = req.params.token;
 
@@ -211,18 +223,31 @@ exports.resetPassword = tryCatch(async (req, res, next) => {
   user.resetPasswordExpire = undefined;
 
   await user.save();
+
+  const response = new ResponseHandler(
+    constants.CREATED,
+    constants.PASSWORD_CHANGED,
+    "PASSWORD_CHANGED",
+    {},
+    res
+  );
+  response.getResponse();
+});
+
+//DELETE USER ACCOUNT
+// exports.deleteAccount = tryCatch(async (req, res, next) => {
+//   const userId = req.userId;
   
-  const response = new ResponseHandler(constants.CREATED,constants.PASSWORD_CHANGED,"PASSWORD_CHANGED",{},res);
-  response.getResponse();
-});
+//   const user = await User.findById({ _id: userId });
+//   user.isDeleted =1;
+//   await user.save(); 
 
-//Delete User Account
-exports.deleteAccount = tryCatch(async (req, res, next) => {
-  const userId = req.userId;
-
-  const user = await User.findById({ _id: userId });
-  await user.remove();
-
-  const response = new ResponseHandler(constants.OK,constants.DELETE_ACCOUNT,"DELETE_ACCOUNT",{},res)
-  response.getResponse();
-});
+//   const response = new ResponseHandler(
+//     constants.OK,
+//     constants.DELETE_ACCOUNT,
+//     "DELETE_ACCOUNT",
+//     {},
+//     res
+//   );
+//   response.getResponse();
+// });

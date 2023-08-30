@@ -15,7 +15,7 @@ router.route("/login").post( loginValidation(), userController.postLogin); //log
 router.route("/logout").post(isAuthenticated, userController.postLogout); //logout
 
 router.route("/user").put(isAuthenticated, upload, userController.updateUser)  //update user
-      .delete(isAuthenticated, userController.deleteAccount);              //Delete User Account
+      // .delete(isAuthenticated, userController.deleteAccount);              //Delete User Account
 
 router
   .route("/password/new")

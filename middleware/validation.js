@@ -59,7 +59,7 @@ exports.productValidation = () => {
 
     check("price").trim().not().isEmpty().withMessage("Please enter price"),
 
-    check("imagePath").not().isEmpty().withMessage("Please add an image"),
+    check("imagePath").isEmpty().withMessage("Please add an image"),
 
     check("description")
       .trim()

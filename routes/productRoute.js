@@ -9,7 +9,7 @@ const { productValidation } = require("../middleware/validation");
 
 router
   .route("/product/new")
-  .post(isAuthenticated,isAdmin, upload, productController.postProduct);    //add product  --Admin
+  .post(isAuthenticated,isAdmin, upload, productValidation(), productController.postProduct);    //add product  --Admin
 
 router
   .route("/product/:id")

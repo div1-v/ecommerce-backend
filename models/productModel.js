@@ -16,6 +16,12 @@ const productSchema = new mongoose.Schema({
     required: [true, "Please enter product price"],
   },
 
+  isDeleted:{
+    type: Number,
+    enum: [0, 1],
+    default: 0,
+  },
+
   creator:{
     type: mongoose.Schema.Types.ObjectId,
     ref:'User',

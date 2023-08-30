@@ -1,4 +1,6 @@
 const multer = require("multer");
+const sharp = require('sharp');
+const sharpMulter= require('sharp-multer'); 
 const ErrorHandler = require("./errorHandler");
 
 const storage = multer.diskStorage({
@@ -10,6 +12,7 @@ const storage = multer.diskStorage({
   },
 });
 
+
 const fileFilter = (req, file, cb) => {
   if (
     file.mimetype === "image/png" ||
@@ -18,7 +21,6 @@ const fileFilter = (req, file, cb) => {
   ) {
     cb(null, true);
   } else {
-    
     cb(new Error("Please add only image"), false);
   }
 };
@@ -30,3 +32,8 @@ const upload = multer({
 }).single("imagePath");
 
 module.exports = upload;
+
+
+
+
+
