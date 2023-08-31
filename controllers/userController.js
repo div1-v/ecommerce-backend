@@ -28,7 +28,7 @@ exports.postSignup = tryCatch(async (req, res, next) => {
 
   const userData = await User.findOne({ email });
   if (userData) {
-    throw new ErrorHandler("User already exist", constants.BAD_REQUEST);
+    throw new ErrorHandler("User already exist", constants.FORBIDDEN);
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);
@@ -68,7 +68,7 @@ exports.postLogin = tryCatch(async (req, res, next) => {
   const isValidPassword = await bcrypt.compare(password, user.password);
 
   if (!isValidPassword) {
-    throw new ErrorHandler("Incorrect Password", constants.BAD_REQUEST);
+    throw new ErrorHandler("Incorrect Password", constants.FORBIDDEN);
   }
 
   const token = await jwt.sign(
@@ -119,7 +119,7 @@ exports.updateUser = tryCatch(async (req, res, next) => {
   const name = req.body.name ?? user.name;
   let newEmail = req.body.email;
 
-  const email = user.email;
+  let email = user.email;
   if (newEmail == email) {
     throw new ErrorHandler(
       "New Email cannot be same as old one",
@@ -144,10 +144,10 @@ exports.updateUser = tryCatch(async (req, res, next) => {
 
     imagePath = newimg;
   }
-
+  email=newEmail
   const updatedUser = await User.findByIdAndUpdate(
     { _id: userId },
-    { $set: { name, newEmail, imagePath } },
+    { $set: { name, email, imagePath } },
     { new: true }
   );
 

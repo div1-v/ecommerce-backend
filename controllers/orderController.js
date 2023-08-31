@@ -107,8 +107,8 @@ exports.postDeliverOrder = tryCatch(async (req, res, next) => {
 //GET ALL ORDERS
 exports.getAllOrders = tryCatch(async (req, res, next) => {
   const orders = await Order.find({ user: req.userId });
-
-  if (!orders) {
+ 
+  if (orders.length==0) {
     throw new ErrorHandler(
       "You have not ordered anything yet",
       constants.NOT_FOUND
@@ -128,7 +128,7 @@ exports.getAllOrders = tryCatch(async (req, res, next) => {
 //GET SINGLE ORDER
 exports.getSingleOrder = tryCatch(async (req, res, next) => {
   const orderId = req.params.id;
-  const order = await Order.findById({ _id: orderId });
+  const order = await Order.findById({ _id: orderId }).populate('products.product');
   if (!order) {
     throw new ErrorHandler("No order found with this id", constants.NOT_FOUND);
   }

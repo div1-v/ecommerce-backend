@@ -70,8 +70,6 @@ exports.productValidation = () => {
       .isLength({ min: 1, max: 80 })
       .withMessage("Price should be atleast 1 character long"),
 
-    body("imagePath").not().isEmpty().withMessage("Please add an image"),
-
     body("description")
       .trim()
       .not()

@@ -62,7 +62,7 @@ exports.getProduct = tryCatch(async (req, res, next) => {
 // CREATE A PRODUCT
 exports.postProduct = tryCatch(async (req, res, next) => {
   const errors = validationResult(req);
-  console.log(errors.array());
+  
   if (errors.array().length > 0) {
     throw new ErrorHandler(errors.array()[0].msg, constants.UNPROCESSED_ENTITY);
   }
@@ -143,7 +143,7 @@ exports.deleteProduct = tryCatch(async (req, res, next) => {
 // UPDATE A PRODUCT
 exports.updateProduct = tryCatch(async (req, res, next) => {
   const errors = validationResult(req);
-  //console.log(errors.array());
+ 
   
   if (errors.array().length > 0) {
     throw new ErrorHandler(errors.array()[0].msg, constants.UNPROCESSED_ENTITY);
