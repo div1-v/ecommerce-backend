@@ -7,6 +7,7 @@ const userController = require("../controllers/userController");
 const {
   signupValidation,
   loginValidation,
+  updateUserValidation
 } = require("../middleware/validation");
 
 //User Routes
@@ -14,7 +15,7 @@ router.route("/signup").post( signupValidation(), userController.postSignup); //
 router.route("/login").post( loginValidation(), userController.postLogin); //login
 router.route("/logout").post(isAuthenticated, userController.postLogout); //logout
 
-router.route("/user").put(isAuthenticated, upload, userController.updateUser)  //update user
+router.route("/user").put(isAuthenticated, upload, updateUserValidation(), userController.updateUser)  //update user
       // .delete(isAuthenticated, userController.deleteAccount);              //Delete User Account
 
 router

@@ -7,15 +7,15 @@ const { UNAUTHORISED, SECRET_KEY } = require("../config/constants");
 exports.isAuthenticated = tryCatch(async (req, res, next) => {
   
   const  token  = req.headers.token;
- 
+  
   if (!token) {
     throw new ErrorHandler("Please login first", UNAUTHORISED);
   }
-
+  
   const decoded = await jwt.verify(token, SECRET_KEY);
-
+  
   const user = await User.findOne({email:decoded.email});
- 
+  if(!user)throw new ErrorHandler("Please login first", UNAUTHORISED);
   req.userId=user._id;
   next();
 

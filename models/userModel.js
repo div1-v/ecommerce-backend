@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, "Please enter user name"],
+      minLength: [3, "Name should have more than 3 characters"],
     },
 
     email: {
@@ -27,7 +28,6 @@ const userSchema = new mongoose.Schema(
       enum: [0, 1],
       default: 0,
     },
-
 
     cart: [
       {

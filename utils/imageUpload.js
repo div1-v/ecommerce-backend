@@ -2,13 +2,14 @@ const multer = require("multer");
 const sharp = require('sharp');
 const sharpMulter= require('sharp-multer'); 
 const ErrorHandler = require("./errorHandler");
+const { tryCatch } = require("../middleware/asyncError");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "uploads");
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + file.originalname);
+    cb(null, `resized-${Date.now()}${file.originalname}`);
   },
 });
 
@@ -31,7 +32,8 @@ const upload = multer({
   limits: { fileSize: 500000 }, //500kb
 }).single("imagePath");
 
-module.exports = upload;
+
+module.exports = upload
 
 
 

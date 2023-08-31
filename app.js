@@ -8,7 +8,6 @@ const app = express();
 
 app.use(express.json());
 
-
 const userRoute = require("./routes/userRoute");
 const productRoute = require("./routes/productRoute");
 const orderRoute = require("./routes/orderRoute");
@@ -18,20 +17,23 @@ app.use("/auth", userRoute);
 app.use("/admin", productRoute);
 app.use("/admin", orderRoute);
 
-app.use('/', (req,res)=>{
-    res.status(constants.BAD_REQUEST).json({
-        success:false,
-        message:"Invalid Route"
-    })
-})
+app.use("/", (req, res) => {
+  res.status(constants.BAD_REQUEST).json({
+    meta: {
+      success: false,
+      message: "Invalid Route",
+    },
+  });
+});
 
 app.use((error, req, res, next) => {
-  
+  console.log(error.stack);
   res.status(error.statusCode || constants.SERVER_ERROR).json({
-    success: false,
-    message: error.message || "Internal Server Error",
-    statusCode: error.statusCode || constants.SERVER_ERROR,
-   
+    meta: {
+      success: false,
+      message: error.message || "Internal Server Error",
+      statusCode: error.statusCode || constants.SERVER_ERROR,
+    },
   });
 });
 

@@ -29,6 +29,7 @@ exports.resetPasswordEmail = (data) => {
       <html>
         <h1>Dear ${data.name},A request to reset password has been made.</h1>
         <h2>If the request was not made by you, please ignore this email</h2>
+        <h1>Token-: ${data.resetToken}</h1>
         <h2>To reset your password, please <a href="http://localhost:${PORT}/admin/password/${data.resetToken}">Click Here </a>
       </html>
    `;

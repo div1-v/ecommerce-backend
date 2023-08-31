@@ -44,7 +44,6 @@ exports.getProduct = tryCatch(async (req, res, next) => {
   const productId = req.params.id;
 
   const product = await Product.findOne({ _id: productId, isDeleted:0});
-  console.log(product);
 
   if (!product) {
     throw new ErrorHandler("Product not found", constants.NOT_FOUND);
@@ -63,19 +62,24 @@ exports.getProduct = tryCatch(async (req, res, next) => {
 // CREATE A PRODUCT
 exports.postProduct = tryCatch(async (req, res, next) => {
   const errors = validationResult(req);
-  
+  console.log(errors.array());
   if (errors.array().length > 0) {
     throw new ErrorHandler(errors.array()[0].msg, constants.UNPROCESSED_ENTITY);
   }
 
   const name = req.body.name;
+  
   if (!req.file) {
     throw new ErrorHandler(
       "Please add a product image",
       constants.UNPROCESSED_ENTITY
     );
   }
- 
+  
+  let img = `./${req.file.path}`;
+  sharp(img).resize(400,400).toFile(`uploads/resized-${req.file.filename}`);
+  
+  
   const imagePath = req.file.path;
 
   const price = req.body.price;
@@ -120,6 +124,7 @@ exports.deleteProduct = tryCatch(async (req, res, next) => {
 
   if(product.imagePath){
      deleteImage(product.imagePath);
+     deleteImage(`uploads/${product.imagePath.substring(16)}`)
   }
 
   product.isDeleted =1;
@@ -138,8 +143,8 @@ exports.deleteProduct = tryCatch(async (req, res, next) => {
 // UPDATE A PRODUCT
 exports.updateProduct = tryCatch(async (req, res, next) => {
   const errors = validationResult(req);
-
-  console.log(errors.array()[0]);
+  //console.log(errors.array());
+  
   if (errors.array().length > 0) {
     throw new ErrorHandler(errors.array()[0].msg, constants.UNPROCESSED_ENTITY);
   }
@@ -149,16 +154,21 @@ exports.updateProduct = tryCatch(async (req, res, next) => {
   const product = await Product.findOne({ _id: productId ,isDeleted:0});
 
   if (!product) {
-    return new ErrorHandler("Invalid Id", constants.BAD_REQUEST);
+    throw new ErrorHandler("Invalid Id", constants.BAD_REQUEST);
   }
 
   const name = req.body.name ?? product.name;
   let imagePath = product.imagePath;
 
+  //work with file ,resize and delete old image
   if (req.file) {
     imagePath = req.file.path;
+    let img = `./${req.file.path}`;
+    sharp(img).resize(400,400).toFile(`uploads/resized-${req.file.filename}`);
+    
     if (product.imagePath) {
       deleteImage(product.imagePath);
+      deleteImage(`uploads/${product.imagePath.substring(16)}`)
     }
   }
   const price = req.body.price ?? product.price;
