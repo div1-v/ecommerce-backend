@@ -127,3 +127,27 @@ exports.updateUserValidation = () => {
       .withMessage("Please enter valid email"),
   ];
 };
+
+exports.orderValidation = () => {
+  return [
+    body("city")
+      .trim()
+      .not()
+      .isEmpty()
+      .withMessage("Please enter city name")
+      .isString()
+      .withMessage("Name can only contain letters")
+      .isLength({ min: 3, max: 20 })
+      .withMessage("City name should be more than 2 characters"),
+
+    body("pinCode")
+      .trim()
+      .not()
+      .isEmpty()
+      .withMessage("Please enter pinCode")
+      .isNumeric()
+      .withMessage("Please enter only numbers")
+      .isLength({min:3})
+      .withMessage("Pincode should be more than 2 characters long")
+  ];
+};

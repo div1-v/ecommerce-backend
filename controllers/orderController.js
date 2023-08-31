@@ -8,10 +8,15 @@ const Order = require("../models/orderModel");
 const template = require("../templates/email");
 const constants = require("../config/constants");
 const ResponseHandler = require("../utils/responseHandler");
+const { validationResult } = require("express-validator");
 
 //CREATE AN ORDER
 exports.createOrder = tryCatch(async (req, res, next) => {
   const userId = req.userId;
+  const errors = validationResult(req);
+  if(errors.array().length!=0){
+    throw new ErrorHandler(errors.array()[0].msg, constants.UNPROCESSED_ENTITY);
+  }
 
   const user = await User.findById({ _id: userId }).populate("cart.product");
 
