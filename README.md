@@ -1,4 +1,4 @@
-# Contact Management System
+# Ecommerce-Backend
 
 This is an ecommerce backend rest api project built using node js ,express, mongoose
 
