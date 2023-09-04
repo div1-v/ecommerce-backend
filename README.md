@@ -31,3 +31,16 @@ Clone the repository:
 ### API Documentation
 
 https://api.postman.com/collections/29426839-cd2d3f4f-797a-4bff-9e49-29f7dfe2b13f?access_key=PMAT-01H9G6MZ5PBSFFHAFP5TQA9J8Z
+
+
+### env
+
+MONGO_URL= 'mongodb://localhost:27017/shop'
+
+PORT= 3000
+
+SECRET_KEY =  'keepitasecret'
+
+EMAIL ="ecommerce@business.com"
+
+TOKEN_EXPIRE = "8h"
