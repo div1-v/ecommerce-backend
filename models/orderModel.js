@@ -22,11 +22,11 @@ const orderSchema = new mongoose.Schema(
     address: {
       city: {
         type: String,
-        required: true
+        required: true,
       },
       pinCode: {
         type: Number,
-        required:true
+        required: true,
       },
     },
 

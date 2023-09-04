@@ -1,28 +1,20 @@
 const nodemailer = require("nodemailer");
-const { orderConfirmationEmail } = require("../templates/email");
+const { EMAIL } = require("../config/constants");
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.ethereal.email',
   port: 587,
   auth: {
-      user: 'greta.fahey@ethereal.email',
-      pass: 'aQ5CgbXQs87epTmJeK'
+      user: 'victoria.blanda68@ethereal.email',
+      pass: 'bnZPHY87jFRagnprk6'
   }
 });
-
-// let transporter = nodemailer.createTransport({
-//   service: "gmail",
-//   auth: {
-//     user: process.env.NODEMAILER_USER,
-//     pass: process.env.NODEMAILER_PASSWORD,
-//   },
-// });
 
 function sendMail(data, subject) {
   transporter.sendMail({
     to: data.email,
 
-    from: process.env.EMAIL,
+    from: EMAIL,
 
     subject: subject,
     html: data.emailTemplate(data),

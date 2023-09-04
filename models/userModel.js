@@ -1,8 +1,12 @@
 const mongoose = require("mongoose");
-const Product = require("../models/productModel");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const userSchema = new mongoose.Schema(
   {
+    dob:{
+       type:Date
+    },
     name: {
       type: String,
       required: [true, "Please enter user name"],
@@ -17,10 +21,16 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, "Please enter password"],
+      minLength: [6, "Password should have more than 5 characters"],
     },
 
     imagePath: {
       type: String,
+    },
+
+    age: {
+      type: Number,
+      required:true
     },
 
     isAdmin: {
@@ -61,5 +71,19 @@ const userSchema = new mongoose.Schema(
 
   { timestamps: true }
 );
+
+
+
+userSchema.methods.getJWTToken = async function () {
+  return await jwt.sign({ id: this._id , email:this.email}, process.env.SECRET_KEY, {
+    expiresIn: process.env.TOKEN_EXPIRE,
+  });
+};
+
+// Compare Password
+userSchema.methods.comparePassword = async function (password) {
+  return await bcrypt.compare(password, this.password);
+};
+
 
 module.exports = mongoose.model("User", userSchema);

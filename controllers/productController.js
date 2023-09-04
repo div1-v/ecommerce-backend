@@ -4,30 +4,35 @@ const Feature = require("../utils/features");
 const User = require("../models/userModel");
 const { tryCatch } = require("../middleware/asyncError");
 const ErrorHandler = require("../utils/errorHandler");
-const { validationResult } = require("express-validator");
 const constants = require("../config/constants");
 const ResponseHandler = require("../utils/responseHandler");
 const sharp = require("sharp");
+const { validationError } = require("../middleware/validation");
 
 // GET ALL PRODUCTS
 exports.getProducts = tryCatch(async (req, res, next) => {
-  const perPage = 2;
+  const perPage = constants.PER_PAGE;
+
   let page = req.query.page;
   if (!page) page = 1;
-  const totalProduct = await Product.countDocuments( { isDeleted: 0 });
+  const totalProduct = await Product.countDocuments({ isDeleted: 0 });
 
-  let products = await Product.find({ isDeleted:0 })
+  let products = await Product.find({ isDeleted: 0 })
     .skip((page - 1) * perPage)
     .limit(perPage);
-  
-   
-    const features = new Feature(products, req.query);
-    features.search();
-    const filteredProducts = features.sort();
-    if(filteredProducts.length == 0) {
-      throw new ErrorHandler("No Product found", 404);
-    }
-    
+
+  if (req.query.keyword) {
+    products = await Product.find({ name: req.query.keyword, isDeleted: 0 })
+      .skip((page - 1) * perPage)
+      .limit(perPage);
+  }
+
+  const features = new Feature(products, req.query);
+ 
+  const filteredProducts = features.sort();
+  if (filteredProducts.length == 0) {
+    throw new ErrorHandler(constants.PRODUCT_NOT_FOUND, 404);
+  }
 
   const response = new ResponseHandler(
     constants.OK,
@@ -43,10 +48,10 @@ exports.getProducts = tryCatch(async (req, res, next) => {
 exports.getProduct = tryCatch(async (req, res, next) => {
   const productId = req.params.id;
 
-  const product = await Product.findOne({ _id: productId, isDeleted:0});
+  const product = await Product.findOne({ _id: productId, isDeleted: 0 });
 
   if (!product) {
-    throw new ErrorHandler("Product not found", constants.NOT_FOUND);
+    throw new ErrorHandler(constants.PRODUCT_NOT_FOUND, constants.NOT_FOUND);
   }
 
   const response = new ResponseHandler(
@@ -61,25 +66,17 @@ exports.getProduct = tryCatch(async (req, res, next) => {
 
 // CREATE A PRODUCT
 exports.postProduct = tryCatch(async (req, res, next) => {
-  const errors = validationResult(req);
-  
-  if (errors.array().length > 0) {
-    throw new ErrorHandler(errors.array()[0].msg, constants.UNPROCESSED_ENTITY);
-  }
+  validationError(req);
 
   const name = req.body.name;
-  
+
   if (!req.file) {
-    throw new ErrorHandler(
-      "Please add a product image",
-      constants.UNPROCESSED_ENTITY
-    );
+    throw new ErrorHandler(constants.NO_IMAGE, constants.UNPROCESSED_ENTITY);
   }
-  
+
   let img = `./${req.file.path}`;
-  sharp(img).resize(400,400).toFile(`uploads/resized-${req.file.filename}`);
-  
-  
+  sharp(img).resize(400, 400).toFile(`uploads/resized-${req.file.filename}`);
+
   const imagePath = req.file.path;
 
   const price = req.body.price;
@@ -105,29 +102,26 @@ exports.postProduct = tryCatch(async (req, res, next) => {
   response.getResponse();
 });
 
-//DELETE A PRODUCT 
+//DELETE A PRODUCT
 exports.deleteProduct = tryCatch(async (req, res, next) => {
   const productId = req.params.id;
 
   const product = await Product.findById({ _id: productId });
 
   if (!product) {
-    throw new ErrorHandler("Invalid Id", constants.BAD_REQUEST);
+    throw new ErrorHandler(constants.PRODUCT_NOT_FOUND, constants.BAD_REQUEST);
   }
 
   if (product.creator.toString() != req.userId.toString()) {
-    throw new ErrorHandler(
-      "Only creator of the product can delete",
-      constants.UNAUTHORISED
-    );
+    throw new ErrorHandler(constants.NOT_AUTHORISED, constants.UNAUTHORISED);
   }
 
-  if(product.imagePath){
-     deleteImage(product.imagePath);
-     deleteImage(`uploads/${product.imagePath.substring(16)}`)
+  if (product.imagePath) {
+    deleteImage(product.imagePath);
+    deleteImage(`uploads/${product.imagePath.substring(16)}`);
   }
 
-  product.isDeleted =1;
+  product.isDeleted = 1;
   await product.save();
 
   const response = new ResponseHandler(
@@ -142,19 +136,14 @@ exports.deleteProduct = tryCatch(async (req, res, next) => {
 
 // UPDATE A PRODUCT
 exports.updateProduct = tryCatch(async (req, res, next) => {
-  const errors = validationResult(req);
- 
-  
-  if (errors.array().length > 0) {
-    throw new ErrorHandler(errors.array()[0].msg, constants.UNPROCESSED_ENTITY);
-  }
+  validationError(req);
 
   const productId = req.params.id;
 
-  const product = await Product.findOne({ _id: productId ,isDeleted:0});
+  const product = await Product.findOne({ _id: productId, isDeleted: 0 });
 
   if (!product) {
-    throw new ErrorHandler("Invalid Id", constants.BAD_REQUEST);
+    throw new ErrorHandler(constants.PRODUCT_NOT_FOUND, constants.BAD_REQUEST);
   }
 
   const name = req.body.name ?? product.name;
@@ -164,11 +153,11 @@ exports.updateProduct = tryCatch(async (req, res, next) => {
   if (req.file) {
     imagePath = req.file.path;
     let img = `./${req.file.path}`;
-    sharp(img).resize(400,400).toFile(`uploads/resized-${req.file.filename}`);
-    
+    sharp(img).resize(400, 400).toFile(`uploads/resized-${req.file.filename}`);
+
     if (product.imagePath) {
       deleteImage(product.imagePath);
-      deleteImage(`uploads/${product.imagePath.substring(16)}`)
+      deleteImage(`uploads/${product.imagePath.substring(16)}`);
     }
   }
   const price = req.body.price ?? product.price;
@@ -194,10 +183,10 @@ exports.updateProduct = tryCatch(async (req, res, next) => {
 // ADD PRODUCT TO CART
 exports.addToCart = tryCatch(async (req, res, next) => {
   const productId = req.params.id;
-  const product =await Product.findOne({ _id: productId ,isDeleted:0});
-  
+  const product = await Product.findOne({ _id: productId, isDeleted: 0 });
+
   if (!product) {
-    throw new ErrorHandler("Invalid Id", constants.BAD_REQUEST);
+    throw new ErrorHandler(constants.PRODUCT_NOT_FOUND, constants.BAD_REQUEST);
   }
 
   const userId = req.userId;

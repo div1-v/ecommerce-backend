@@ -1,27 +1,23 @@
-const Product = require("../models/productModel");
 const User = require("../models/userModel");
 const sendMail = require("../utils/sendEmail");
-
 const { tryCatch } = require("../middleware/asyncError");
 const ErrorHandler = require("../utils/errorHandler");
 const Order = require("../models/orderModel");
 const template = require("../templates/email");
 const constants = require("../config/constants");
 const ResponseHandler = require("../utils/responseHandler");
-const { validationResult } = require("express-validator");
+const { validationError } = require("../middleware/validation");
 
 //CREATE AN ORDER
 exports.createOrder = tryCatch(async (req, res, next) => {
-  const userId = req.userId;
-  const errors = validationResult(req);
-  if(errors.array().length!=0){
-    throw new ErrorHandler(errors.array()[0].msg, constants.UNPROCESSED_ENTITY);
-  }
+  validationError(req);
 
+  const userId = req.userId;
+  
   const user = await User.findById({ _id: userId }).populate("cart.product");
 
   if (user.cart.length == 0) {
-    throw new ErrorHandler("Your cart is empty", constants.NOT_FOUND);
+    throw new ErrorHandler( constants.EMPTY_CART, constants.NOT_FOUND);
   }
   const city = req.body.city;
   const pinCode = req.body.pinCode;
@@ -74,14 +70,14 @@ exports.postDeliverOrder = tryCatch(async (req, res, next) => {
 
   if (!order) {
     throw new ErrorHandler(
-      "Order with orderId does not exist",
+      constants.ORDER_NOT_FOUND,
       constants.NOT_FOUND
     );
   }
 
   if (order.isDelivered == 1) {
     throw new ErrorHandler(
-      "Order has already been delivered",
+      constants.ORDER_ALREADY_DELIVERED,
       constants.BAD_REQUEST
     );
   }
@@ -112,10 +108,10 @@ exports.postDeliverOrder = tryCatch(async (req, res, next) => {
 //GET ALL ORDERS
 exports.getAllOrders = tryCatch(async (req, res, next) => {
   const orders = await Order.find({ user: req.userId });
- 
-  if (orders.length==0) {
+
+  if (orders.length == 0) {
     throw new ErrorHandler(
-      "You have not ordered anything yet",
+      constants.NO_ORDERS,
       constants.NOT_FOUND
     );
   }
@@ -133,9 +129,11 @@ exports.getAllOrders = tryCatch(async (req, res, next) => {
 //GET SINGLE ORDER
 exports.getSingleOrder = tryCatch(async (req, res, next) => {
   const orderId = req.params.id;
-  const order = await Order.findById({ _id: orderId }).populate('products.product');
+  const order = await Order.findById({ _id: orderId }).populate(
+    "products.product"
+  );
   if (!order) {
-    throw new ErrorHandler("No order found with this id", constants.NOT_FOUND);
+    throw new ErrorHandler(constants.ORDER_NOT_FOUND, constants.NOT_FOUND);
   }
 
   const response = new ResponseHandler(

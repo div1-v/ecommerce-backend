@@ -7,24 +7,29 @@ const userController = require("../controllers/userController");
 const {
   signupValidation,
   loginValidation,
-  updateUserValidation
+  updateUserValidation,
+  resetPasswordValidation,
 } = require("../middleware/validation");
 
 //User Routes
-router.route("/signup").post( signupValidation(), userController.postSignup); //signup
-router.route("/login").post( loginValidation(), userController.postLogin); //login
+router.route("/signup").post(signupValidation(), userController.postSignup); //signup
+router.route("/login").post(loginValidation(), userController.postLogin); //login
 router.route("/logout").post(isAuthenticated, userController.postLogout); //logout
 
-router.route("/user").put(isAuthenticated, upload, updateUserValidation(), userController.updateUser)  //update user
-      // .delete(isAuthenticated, userController.deleteAccount);              //Delete User Account
-
 router
-  .route("/password/new")
-  .post(userController.forgetPassword)  // forget password
-  
-router.route('/password/:token').put(userController.resetPassword);  //reset Password
+  .route("/user")
+  .put(
+    isAuthenticated,
+    upload,
+    updateUserValidation(),
+    userController.updateUser
+  ); //update user
+// .delete(isAuthenticated, userController.deleteAccount);              //Delete User Account
+
+router.route("/password/new").post(userController.forgetPassword); // forget password
+
+router.route("/password/:token").put(resetPasswordValidation(), userController.resetPassword); //reset Password
 
 router.route("/:id").put(isAuthenticated, isAdmin, userController.makeAdmin); //make an user admin
-
 
 module.exports = router;

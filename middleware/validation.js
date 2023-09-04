@@ -1,4 +1,7 @@
-const { body, check } = require("express-validator");
+const { body } = require("express-validator");
+const { validationResult } = require("express-validator");
+const { UNPROCESSED_ENTITY } = require("../config/constants");
+const ErrorHandler = require("../utils/errorHandler");
 
 exports.signupValidation = () => {
   return [
@@ -8,7 +11,8 @@ exports.signupValidation = () => {
       .isEmpty()
       .withMessage("Please enter email")
       .isEmail()
-      .withMessage("Please enter valid email"),
+      .withMessage("Please enter valid email")
+      .toLowerCase(),
 
     body("name")
       .trim()
@@ -25,8 +29,36 @@ exports.signupValidation = () => {
       .not()
       .isEmpty()
       .withMessage("Please enter password")
-      .isLength({ min: 3, max: 20 })
-      .withMessage("Password should be more than 2 characters"),
+      .isLength({ min: 6, max: 20 })
+      .withMessage("Password should be more than 5 characters")
+      .custom((value) => {
+        if (!/[a-z]/.test(value) || !/[A-Z]/.test(value) ||  !/[0-9]/.test(value) || !/[!@#$%^&*]/.test(value)){
+           return false;
+        }
+        return true;
+
+      })
+      .withMessage("Password must contain atleast 1 lowercase, 1 uppercase, 1 numeric and 1 special character"),
+
+    body("dob")
+      .trim()
+      .not()
+      .isEmpty()
+      .withMessage("Please enter date of birth")
+      .custom((dob) => {
+        let date = dob.split("/");
+
+        if (
+          date.length != 3 ||
+          date[0].length != 2 ||
+          date[1].length != 2 ||
+          date[2].length != 4
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .withMessage("Please enter valid date of birth"),
   ];
 };
 
@@ -38,15 +70,24 @@ exports.loginValidation = () => {
       .isEmpty()
       .withMessage("Please enter email")
       .isEmail()
-      .withMessage("Please enter valid email"),
+      .withMessage("Please enter valid email")
+      .toLowerCase(),
 
     body("password")
       .trim()
       .not()
       .isEmpty()
       .withMessage("Please enter password")
-      .isLength({ min: 3, max: 20 })
-      .withMessage("Password should be more than 2 characters"),
+      .isLength({ min: 6, max: 20 })
+      .withMessage("Password should be more than 5 characters")
+      .custom((value) => {
+        if (!/[a-z]/.test(value) || !/[A-Z]/.test(value) ||  !/[0-9]/.test(value) || !/[!@#$%^&*]/.test(value)){
+           return false;
+        }
+        return true;
+
+      })
+      .withMessage("Password must contain atleast 1 lowercase, 1 uppercase, 1 numeric and 1 special character"),
   ];
 };
 
@@ -68,7 +109,9 @@ exports.productValidation = () => {
       .isEmpty()
       .withMessage("Please enter price")
       .isLength({ min: 1, max: 80 })
-      .withMessage("Price should be atleast 1 character long"),
+      .withMessage("Price should be atleast 1 character long")
+      .isNumeric()
+      .withMessage("Price can only contain numbers"),
 
     body("description")
       .trim()
@@ -94,7 +137,9 @@ exports.updateProductValidation = () => {
       .optional()
       .trim()
       .isLength({ min: 1, max: 80 })
-      .withMessage("Price should be atleast 1 character long"),
+      .withMessage("Price should be atleast 1 character long")
+      .isNumeric()
+      .withMessage("Price can only contain numbers"),
 
     body("imagePath")
       .optional()
@@ -124,7 +169,8 @@ exports.updateUserValidation = () => {
       .optional()
       .trim()
       .isEmail()
-      .withMessage("Please enter valid email"),
+      .withMessage("Please enter valid email")
+      .toLowerCase(),
   ];
 };
 
@@ -146,8 +192,36 @@ exports.orderValidation = () => {
       .isEmpty()
       .withMessage("Please enter pinCode")
       .isNumeric()
-      .withMessage("Please enter only numbers")
-      .isLength({min:3})
-      .withMessage("Pincode should be more than 2 characters long")
+      .withMessage("PinCode can only contain numbers")
+      .isLength({ min: 3 })
+      .withMessage("Pincode should be more than 2 characters long"),
   ];
+};
+
+exports.resetPasswordValidation = () => {
+  return [
+    body("password")
+      .trim()
+      .not()
+      .isEmpty()
+      .withMessage("Please enter password")
+      .isLength({ min: 6, max: 20 })
+      .withMessage("Password should be more than 5 characters")
+      .custom((value) => {
+        if (!/[a-z]/.test(value) || !/[A-Z]/.test(value) ||  !/[0-9]/.test(value) || !/[!@#$%^&*]/.test(value)){
+           return false;
+        }
+        return true;
+
+      })
+      .withMessage("Password must contain atleast 1 lowercase, 1 uppercase, 1 numeric and 1 special character"),
+  ];
+};
+
+exports.validationError = (req) => {
+  const errors = validationResult(req);
+
+  if (errors.array().length > 0) {
+    throw new ErrorHandler(errors.array()[0].msg, UNPROCESSED_ENTITY);
+  }
 };

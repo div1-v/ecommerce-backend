@@ -1,25 +1,28 @@
 const User = require("../models/userModel");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
 const deleteImage = require("../utils/imageDelete");
 const { tryCatch } = require("../middleware/asyncError");
 const ErrorHandler = require("../utils/errorHandler");
-const { validationResult } = require("express-validator");
 const sendMail = require("../utils/sendEmail");
 const crypto = require("crypto");
 const template = require("../templates/email");
 const constants = require("../config/constants");
 const ResponseHandler = require("../utils/responseHandler");
 const sharp = require("sharp");
+const { encryptPassword } = require("../middleware/auth");
+const { validationError } = require("../middleware/validation");
 
 // SIGNUP USER
 exports.postSignup = tryCatch(async (req, res, next) => {
-  const errors = validationResult(req);
+  validationError(req);
+  const { dob, name, email, password } = req.body;
+  let date= dob.split('/');
+  
+  let dateOfBirth = new Date(date[2], date[1] - 1, date[0]);
+  let curDate = Date.now();
 
-  const { name, email, password } = req.body;
-  if (errors.array().length > 0) {
-    throw new ErrorHandler(errors.array()[0].msg, constants.UNPROCESSED_ENTITY);
-  }
+  let years = (parseInt((curDate - dateOfBirth) / (1000 * 60 * 60 * 24 * 365.2425), 10));
+  //console.log(dateOfBirth, curDate, diffDays);
+  
   const count = await User.countDocuments();
   let isAdmin = 0;
   if (count == 0) {
@@ -28,11 +31,13 @@ exports.postSignup = tryCatch(async (req, res, next) => {
 
   const userData = await User.findOne({ email });
   if (userData) {
-    throw new ErrorHandler("User already exist", constants.FORBIDDEN);
+    throw new ErrorHandler(constants.USER_EXIST, constants.FORBIDDEN);
   }
 
-  const hashedPassword = await bcrypt.hash(password, 12);
+  const hashedPassword = await encryptPassword(password);
   const user = new User({
+    dob:dateOfBirth,
+    age:years,
     name,
     email,
     password: hashedPassword,
@@ -53,29 +58,24 @@ exports.postSignup = tryCatch(async (req, res, next) => {
 
 // LOGIN USER
 exports.postLogin = tryCatch(async (req, res, next) => {
-  const errors = validationResult(req);
-  if (errors.array().length > 0) {
-    throw new ErrorHandler(errors.array()[0].msg, constants.UNAUTHORISED);
-  }
+  validationError(req);
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
 
   if (!user) {
-    throw new ErrorHandler("Email does not exist", constants.NOT_FOUND);
+    throw new ErrorHandler(constants.EMAIL_NOT_FOUND, constants.NOT_FOUND);
   }
 
-  const isValidPassword = await bcrypt.compare(password, user.password);
+  const isValidPassword = await user.comparePassword(password);
 
   if (!isValidPassword) {
-    throw new ErrorHandler("Incorrect Password", constants.FORBIDDEN);
+    throw new ErrorHandler(constants.INCORRECT_PASSWORD, constants.FORBIDDEN);
   }
 
-  const token = await jwt.sign(
-    { email: user.email, userId: user._id },
-    process.env.SECRET_KEY,
-    { expiresIn: "8h" }
-  );
+  const token = await user.getJWTToken();
+
+  await user.save();
 
   const response = new ResponseHandler(
     constants.OK,
@@ -90,18 +90,11 @@ exports.postLogin = tryCatch(async (req, res, next) => {
 
 // LOGOUT USER
 exports.postLogout = tryCatch(async (req, res, next) => {
-  const user = await User.findById({ _id: req.userId });
-  const token = await jwt.sign(
-    { email: user.email, userId: user._id },
-    process.env.SECRET_KEY,
-    { expiresIn: "1s" }
-  );
-
   const response = new ResponseHandler(
     constants.OK,
     constants.SUCCESSFUL_LOGOUT,
     "SUCCESSFUL_LOGOUT",
-    { token: token },
+    { token: "" },
     res
   );
   response.getResponse();
@@ -110,10 +103,7 @@ exports.postLogout = tryCatch(async (req, res, next) => {
 // UPDATE A USER
 exports.updateUser = tryCatch(async (req, res, next) => {
   const userId = req.userId;
-  const errors = validationResult(req);
-  if (errors.array().length > 0) {
-    throw new ErrorHandler(errors.array()[0].msg, constants.UNPROCESSED_ENTITY);
-  }
+  validationError(req);
 
   const user = await User.findById({ _id: userId });
   const name = req.body.name ?? user.name;
@@ -121,11 +111,15 @@ exports.updateUser = tryCatch(async (req, res, next) => {
 
   let email = user.email;
   if (newEmail == email) {
-    throw new ErrorHandler(
-      "New Email cannot be same as old one",
-      constants.BAD_REQUEST
-    );
+    throw new ErrorHandler(constants.SAME_EMAIL_ERROR, constants.BAD_REQUEST);
   }
+
+  const userwithnewEmail = await User.findOne({ email: newEmail });
+
+  if (userwithnewEmail) {
+    throw new ErrorHandler(constants.USER_EXIST, constants.UNPROCESSED_ENTITY);
+  }
+
   if (!newEmail) newEmail = email;
   let imagePath = user.imagePath;
 
@@ -144,7 +138,7 @@ exports.updateUser = tryCatch(async (req, res, next) => {
 
     imagePath = newimg;
   }
-  email=newEmail
+  email = newEmail;
   const updatedUser = await User.findByIdAndUpdate(
     { _id: userId },
     { $set: { name, email, imagePath } },
@@ -166,18 +160,15 @@ exports.makeAdmin = tryCatch(async (req, res, next) => {
   const userId = req.userId;
   const user = await User.findById({ _id: userId });
   if (!user.isAdmin) {
-    throw new ErrorHandler(
-      "Only admin can change user status",
-      constants.UNAUTHORISED
-    );
+    throw new ErrorHandler(constants.NOT_ADMIN, constants.UNAUTHORISED);
   }
   const toBeAdminUserId = req.params.id;
   const toBeAdminUser = await User.findById({ _id: toBeAdminUserId });
   if (!toBeAdminUser) {
-    throw new ErrorHandler("No user found with this Id", constants.NOT_FOUND);
+    throw new ErrorHandler(constants.USER_NOT_EXIST, constants.NOT_FOUND);
   }
   if (toBeAdminUser.isAdmin == 1) {
-    throw new ErrorHandler("User is already an admin", constants.OK);
+    throw new ErrorHandler(constants.ALREADY_ADMIN, constants.OK);
   }
   toBeAdminUser.isAdmin = 1;
 
@@ -199,10 +190,7 @@ exports.forgetPassword = tryCatch(async (req, res, next) => {
   const user = await User.findOne({ email });
 
   if (!user) {
-    throw new ErrorHandler(
-      "No User found with this email",
-      constants.NOT_FOUND
-    );
+    throw new ErrorHandler(constants.USER_NOT_EXIST, constants.NOT_FOUND);
   }
 
   const resetToken = crypto.randomBytes(20).toString("hex");
@@ -234,22 +222,17 @@ exports.forgetPassword = tryCatch(async (req, res, next) => {
 //RESET PASSWORD
 exports.resetPassword = tryCatch(async (req, res, next) => {
   const resetPasswordToken = req.params.token;
-
+  validationError(req);
   const user = await User.findOne({
     resetPasswordToken,
     resetPasswordExpire: { $gt: Date.now() },
   });
   if (!user) {
-    throw new ErrorHandler("This token is not valid", constants.BAD_REQUEST);
+    throw new ErrorHandler(constants.INVALID_TOKEN, constants.BAD_REQUEST);
   }
   const password = req.body.password;
-  if (!password) {
-    throw new ErrorHandler(
-      "Please enter password",
-      constants.UNPROCESSED_ENTITY
-    );
-  }
-  const hashedPassword = await bcrypt.hash(password, 12);
+
+  const hashedPassword = await encryptPassword(password);
   user.password = hashedPassword;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
