@@ -53,5 +53,6 @@ module.exports = {
   NO_ORDERS: "You have not ordered anything",
   NOT_LOGGEDIN: "Please login first",
 
-  INTERNAL_SERVER_ERROR: "Internal server error"
+  INTERNAL_SERVER_ERROR: "Internal server error",
+  WRONG_USER:"You are not authorised to access this"
 };
